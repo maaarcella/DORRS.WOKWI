@@ -1,0 +1,95 @@
+import machine
+import ssd1306
+import time
+
+led_vermelho = machine.Pin(25, machine.Pin.OUT)
+led_verde = machine.Pin(26, machine.Pin.OUT)
+
+botao_verde = machine.Pin(33, machine.Pin.IN, machine.Pin.PULL_UP)
+botao_azul = machine.Pin(32, machine.Pin.IN, machine.Pin.PULL_UP)
+botao_roxo = machine.Pin(35, machine.Pin.IN, machine.Pin.PULL_UP)
+botao_vermelho = machine.Pin(34, machine.Pin.IN, machine.Pin.PULL_UP)
+
+i2c = machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21))
+oled_largura = 128
+oled_tamanho = 64
+oled = ssd1306.SSD1306_I2C(oled_largura, oled_tamanho, i2c)
+
+servo1 = machine.PWM(machine.Pin(18))
+servo1.freq(50)
+servo2 = machine.PWM(machine.Pin(19))
+servo2.freq(50)
+servo3 = machine.PWM(machine.Pin(17))
+servo3.freq(50)
+
+def mover_servo(servo_objeto, angulo):
+    pmin = 26
+    pmax = 128
+    calculo = int(pmin + (angulo / 180) * (pmax - pmin))
+    servo_objeto.duty(calculo)
+
+mover_servo(servo1, 90)
+mover_servo(servo2, 90)
+mover_servo(servo3, 90)
+
+
+porta_selecionada = 0
+estado_porta = {1: "Trancada", 2: "Trancada", 3: "Trancada"}
+servos = {1: servo1, 2: servo2, 3: servo3}
+
+while True:
+    if botao_verde.value() == 0:
+        porta_selecionada = 1
+        oled.fill(0)
+        oled.text("Porta 1", 0, 10)
+        oled.text("Lab informatica", 0, 20)
+        oled.text(f"Status: {estado_porta[1]}", 0, 40)
+        oled.show()
+        time.sleep(0.3)
+
+    elif botao_azul.value() == 0:
+        porta_selecionada = 2
+        oled.fill(0)
+        oled.text("Porta 2", 0, 10)
+        oled.text("Sala professores", 0, 20)
+        oled.text(f"Status: {estado_porta[2]}", 0, 40)
+        oled.show()
+        time.sleep(0.3)
+
+    elif botao_roxo.value() == 0:
+        porta_selecionada = 3
+        oled.fill(0)
+        oled.text("Porta 3", 0, 10)
+        oled.text("Almoxerifado", 0, 20)
+        oled.text(f"Status: {estado_porta[3]}", 0, 40)
+        oled.show()
+        time.sleep(0.3)
+
+    elif botao_vermelho.value() == 0:
+        if porta_selecionada == 0:
+            oled.fill(0)
+            oled.text("Selecione uma", 0, 10)
+            oled.text("porta primeiro!", 0, 20)
+            oled.show()
+        else:
+            servo_atual = servos[porta_selecionada]
+            
+            if estado_porta[porta_selecionada] == "Trancada":
+                mover_servo(servo_atual, 0)
+                estado_porta[porta_selecionada] = "Aberta"
+                led_verde.on()
+                led_vermelho.off()
+            else:
+                mover_servo(servo_atual, 90)
+                estado_porta[porta_selecionada] = "Trancada"
+                led_verde.off()
+                led_vermelho.on()
+            
+            oled.fill(0)
+            oled.text(f"Porta {porta_selecionada}", 0, 10)
+            oled.text(f"Status: {estado_porta[porta_selecionada]}", 0, 30)
+            oled.show()
+            
+        time.sleep(0.3) 
+
+    time.sleep(0.05)
